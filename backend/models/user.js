@@ -6,62 +6,62 @@ const crypto = require('crypto')
 
 
 const userSchema = new mongoose.Schema({
-    first_name:{
+    first_name: {
         type: String,
         required: [true, 'Please enter your first name'],
         maxLength: [30, 'Your first name cannot exceed 30 characters']
     },
-    last_name:{
+    last_name: {
         type: String,
         required: [true, 'Please enter your last name'],
         maxLength: [30, 'Your last name cannot exceed 30 characters']
     },
-    gender:{
+    gender: {
         type: String,
         required: [true, 'Please enter male female'],
         default: 'male'
     },
-    birthday:{
+    birthday: {
         type: String,
         required: [true, 'Please enter your birthday']
     },
-    address:{
+    address: {
         type: String,
         required: [true, 'Please enter your address']
     },
-    phone_no:{
+    phone_no: {
         type: String,
-        unique:true,
+        unique: true,
         required: [true, 'Please enter your phoneNo'],
         maxLength: [10, ' Invalid Phone Number'],
-        minlength:[10, 'Invalid Phone Number'],
+        minlength: [10, 'Invalid Phone Number'],
     },
-    email:{
-        type:String,
+    email: {
+        type: String,
         required: [true, 'Please enter your email'],
         unique: true,
-        validate: [validator.isEmail, 'Please enter valid email address']   
+        validate: [validator.isEmail, 'Please enter valid email address']
     },
-    password:{
+    password: {
         type: String,
-        required:[true, 'Please enter your password'],
-        minlength:[6, 'Your password must be longer than 6 characters'],
-        select:false
+        required: [true, 'Please enter your password'],
+        minlength: [6, 'Your password must be longer than 6 characters'],
+        select: false
     },
     avatar: {
-        public_id:{
-            type:String,
+        public_id: {
+            type: String,
             required: true
         },
         url: {
-            type:String,
+            type: String,
             required: true
         }
     },
 
 
     //admin wenuwen dapu eka
-    role :{
+    role: {
         type: String,
         default: 'user'
     },
@@ -76,32 +76,39 @@ const userSchema = new mongoose.Schema({
     //iwr una
 
 
-    resetPasswordToken:String,
-    resetPasswordExpire:Date
+    resetPasswordToken: String,
+    resetPasswordExpire: Date
 
 })
 
 
+
+
+
 //Encrypte user pwd before the save
-userSchema.pre('save', async function (next){
-    if(!this.isModified('password')){
+userSchema.pre('save', async function (next) {
+    if (!this.isModified('password')) {
         next()
     }
 
-    this.password = await bcrypt.hash(this.password, 10)
+    //  fixed
+    const saltRounds = 10;
+    const salt = await bcrypt.genSalt(saltRounds);
+    this.password = await bcrypt.hash(this.password, salt);
+    // this.password = await bcrypt.hash(this.password, 10)
 })
 
 
 
 //comparing the users pwd
-userSchema.methods.comparePassword = async function (enteredPassword){
+userSchema.methods.comparePassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password)
-} 
+}
 
 
 //Rturn JWTToken
-userSchema.methods.getJwtToken = function (){
-    return jwt.sign({id: this._id}, process.env.JWT_SECRET, {
+userSchema.methods.getJwtToken = function () {
+    return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRES_TIME
     });
 }
@@ -109,7 +116,7 @@ userSchema.methods.getJwtToken = function (){
 
 //genarating the pwd reset token 
 
-userSchema.methods.getResetPasswordToken = function() {
+userSchema.methods.getResetPasswordToken = function () {
     //generating  token
     const resetToken = crypto.randomBytes(20).toString('hex');
 
