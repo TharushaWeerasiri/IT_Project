@@ -17,24 +17,16 @@ exports.newProduct = catchAsyncErrors ( async (req, res, next) => {
 
     let imagesLinks = [];
 
-    // fixed
-    if (Array.isArray(images) && images.length < MAX_ALLOWED_LENGTH) {
-        for(let i = 0; i < images.length; i++) {
-            const result = await cloudinary.v2.uploader.upload(images[i], {
-                folder: 'products'
-            });
-    
-            imagesLinks.push({
-                public_id: result.public_id,
-                url: result.secure_url
-            })
-        }
-    } else {
-        //  do nothing
-    }
-    
+    for(let i = 0; i < images.length; i++) {
+        const result = await cloudinary.v2.uploader.upload(images[i], {
+            folder: 'products'
+        });
 
-    
+        imagesLinks.push({
+            public_id: result.public_id,
+            url: result.secure_url
+        })
+    }
 
     req.body.images = imagesLinks
 
