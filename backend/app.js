@@ -1,5 +1,17 @@
 const express = require('express');
+
+
+
+// fixed 
+const express = require('express');
+const csrf = require('csurf'); 
 const app = express();
+
+const csrfProtection = csrf(); 
+
+app.use(csrfProtection); 
+
+
 
 const cookieParser = require('cookie-parser')
 
