@@ -9,26 +9,31 @@ const cloudinary = require('cloudinary')
 exports.newOffer = catchAsyncErrors(async (req, res, next) => {
 
     let images = []
-    if(typeof req.body.images === 'string'){
+    if (typeof req.body.images === 'string') {
         images.push(req.body.images)
     } else {
         images = req.body.images
     }
 
-    let imagesLinks = [];
+    if (Array.isArray(images) && images.length <= 10) {
+        let imagesLinks = [];
 
-    for(let i = 0; i < images.length; i++) {
-        const result = await cloudinary.v2.uploader.upload(images[i], {
-            folder: 'offers'
-        });
+        for (let i = 0; i < images.length; i++) {
+            const result = await cloudinary.v2.uploader.upload(images[i], {
+                folder: 'offers'
+            });
 
-        imagesLinks.push({
-            public_id: result.public_id,
-            url: result.secure_url
-        })
+            imagesLinks.push({
+                public_id: result.public_id,
+                url: result.secure_url
+            })
+        }
+
+        req.body.images = imagesLinks
+    } else {
+        // Handle the case where the input images are not an array or exceed the maximum count
+        return next(new ErrorHandler('Invalid or too many images provided', 400));
     }
-
-    req.body.images = imagesLinks
 
     const offer = await Offer.create(req.body);
 
@@ -51,17 +56,17 @@ exports.getOffers = catchAsyncErrors(async (req, res, next) => {
 
     const offers = await apiFeatures.query;
 
-        res.status(200).json({
-            success: true,
-            offersCount,
-            offers
-        })
-   
+    res.status(200).json({
+        success: true,
+        offersCount,
+        offers
+    })
+
 })
 
 
 // Get all offers (Admin) => /api/v1/admin/offers
-exports.getAdminOffers = catchAsyncErrors ( async (req, res, next) => {
+exports.getAdminOffers = catchAsyncErrors(async (req, res, next) => {
 
     const offers = await Offer.find();
 
@@ -77,7 +82,7 @@ exports.getSingleOffer = catchAsyncErrors(async (req, res, next) => {
 
     const offer = await Offer.findById(req.params.id);
 
-    if(!offer) {
+    if (!offer) {
         return next(new ErrorHandler('Offer not found', 404));
     }
 
@@ -92,38 +97,43 @@ exports.getSingleOffer = catchAsyncErrors(async (req, res, next) => {
 exports.updateOffer = catchAsyncErrors(async (req, res, next) => {
     let offer = await Offer.findById(req.params.id);
 
-    if(!offer) {
+    if (!offer) {
         return next(new ErrorHandler('Offer not found', 404));
     }
 
     let images = []
-    if(typeof req.body.images === 'string'){
+    if (typeof req.body.images === 'string') {
         images.push(req.body.images)
     } else {
         images = req.body.images
     }
 
-    if(images !== undefined) {
+    if (images !== undefined) {
 
         // Deleting images associated with the offer
-        for(let i = 0; i < offer.images.length; i++ ){
-        const result = await cloudinary.v2.uploader.destroy(offer.images[i].public_id)
-    }
+        for (let i = 0; i < offer.images.length; i++) {
+            const result = await cloudinary.v2.uploader.destroy(offer.images[i].public_id)
+        }
 
-    let imagesLinks = [];
+        if (Array.isArray(images) && images.length <= 10) {
+            let imagesLinks = [];
 
-    for(let i = 0; i < images.length; i++) {
-        const result = await cloudinary.v2.uploader.upload(images[i], {
-            folder: 'offers'
-        });
+            for (let i = 0; i < images.length; i++) {
+                const result = await cloudinary.v2.uploader.upload(images[i], {
+                    folder: 'offers'
+                });
 
-        imagesLinks.push({
-            public_id: result.public_id,
-            url: result.secure_url
-        })
-    }
+                imagesLinks.push({
+                    public_id: result.public_id,
+                    url: result.secure_url
+                })
+            }
 
-    req.body.images = imagesLinks
+            req.body.images = imagesLinks
+        } else {
+            // Handle the case where the input images are not an array or exceed the maximum count
+            return next(new ErrorHandler('Invalid or too many images provided', 400));
+        }
 
     }
 
@@ -148,12 +158,12 @@ exports.deleteOffer = catchAsyncErrors(async (req, res, next) => {
 
     const offer = await Offer.findById(req.params.id);
 
-    if(!offer) {
+    if (!offer) {
         return next(new ErrorHandler('Offer not found', 404));
     }
 
     // Deleting images associated with the offer
-    for(let i = 0; i < offer.images.length; i++ ){
+    for (let i = 0; i < offer.images.length; i++) {
         const result = await cloudinary.v2.uploader.destroy(offer.images[i].public_id)
     }
 

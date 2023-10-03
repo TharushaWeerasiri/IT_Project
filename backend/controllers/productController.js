@@ -15,20 +15,25 @@ exports.newProduct = catchAsyncErrors(async (req, res, next) => {
         images = req.body.images
     }
 
-    let imagesLinks = [];
+    if (Array.isArray(images) && images.length <= 10) {
+        let imagesLinks = [];
 
-    for (let i = 0; i < images.length; i++) {
-        const result = await cloudinary.v2.uploader.upload(images[i], {
-            folder: 'products'
-        });
+        for (let i = 0; i < images.length; i++) {
+            const result = await cloudinary.v2.uploader.upload(images[i], {
+                folder: 'products'
+            });
 
-        imagesLinks.push({
-            public_id: result.public_id,
-            url: result.secure_url
-        })
+            imagesLinks.push({
+                public_id: result.public_id,
+                url: result.secure_url
+            })
+        }
+
+        req.body.images = imagesLinks
+    } else {
+        // Handle the case where the input images are not an array or exceed the maximum count
+        return next(new ErrorHandler('Invalid or too many images provided', 400));
     }
-
-    req.body.images = imagesLinks
 
     const product = await Product.create(req.body);
 
@@ -116,8 +121,7 @@ exports.updateProduct = catchAsyncErrors(async (req, res, next) => {
         }
 
 
-
-        if (Array.isArray(images) && images.length <= 10) { // Replace MAX_IMAGE_COUNT with a reasonable maximum value
+        if (Array.isArray(images) && images.length <= 10) {
             let imagesLinks = [];
 
             for (let i = 0; i < images.length; i++) {
